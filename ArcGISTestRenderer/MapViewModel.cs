@@ -10,6 +10,10 @@ using Esri.ArcGISRuntime.UI;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Esri.ArcGISRuntime.Geometry;
+using System.IO;
+using System.Xml.Linq;
+using System.Globalization;
+using Esri.ArcGISRuntime.Data;
 
 namespace ArcGISTestRenderer
 {
@@ -35,19 +39,37 @@ namespace ArcGISTestRenderer
             }
         }
 
-        private GraphicsOverlayCollection _graphicsOverlays;
-        public GraphicsOverlayCollection GraphicsOverlays
+        public GraphicsOverlay pointsGraphicsOverlay;
+        public GraphicsOverlay militaryGraphicsOverlay;
+
+        private string _latitude;
+        public string Latitude
         {
             get
             {
-                return _graphicsOverlays;
+                return _latitude;
             }
             set
             {
-                _graphicsOverlays = value;
+                _latitude = value;
                 OnPropertyChanged();
             }
         }
+
+        private string _longitude;
+        public string Longitude
+        {
+            get
+            {
+                return _longitude;
+            }
+            set
+            {
+                _longitude = value;
+                OnPropertyChanged();
+            }
+        }
+
 
         public MapViewModel()
         {
@@ -61,49 +83,134 @@ namespace ArcGISTestRenderer
             Map = new Map(BasemapStyle.ArcGISTopographic);
         }
 
-        private void CreateGraphics()
+        private async void CreateGraphics()
         {
             // Create a new graphics overlay to contain a variety of graphics.
-            GraphicsOverlay malibuGraphicsOverlay = new GraphicsOverlay();
+            pointsGraphicsOverlay = new GraphicsOverlay();
+            militaryGraphicsOverlay = new GraphicsOverlay();
 
-            // Add the overlay to a graphics overlay collection.
-            GraphicsOverlayCollection overlays = new GraphicsOverlayCollection
-            {
-                malibuGraphicsOverlay
-            };
+            string path = Directory.GetCurrentDirectory();
+            DictionarySymbolStyle mil2525DStyle = await DictionarySymbolStyle.CreateFromFileAsync(path + "\\mil2525d.stylx");
+            militaryGraphicsOverlay.Renderer = new DictionaryRenderer(mil2525DStyle);
+            pointsGraphicsOverlay.Renderer = new DictionaryRenderer(mil2525DStyle);
 
-            // Set the view model's "GraphicsOverlays" property (will be consumed by the map view).
-            GraphicsOverlays = overlays;
-
-            
-            // Add the point graphic to graphics overlay.
-            malibuGraphicsOverlay.Graphics.Add(CreatePoint());
+            LoadMilitaryMessages();
+            Latitude = "0";
+            Longitude = "0";
+            CreatePoint();
         }
 
-        private Graphic CreatePoint()
+        public void LoadMilitaryMessages()
+        {
+            // Get the path to the messages file.
+            string path = Directory.GetCurrentDirectory();
+
+            // Load the XML document.
+            XElement xmlRoot = XElement.Load(path + "\\Mil2525DMessages.xml");
+
+            // Get all of the messages.
+            IEnumerable <XElement> messages = xmlRoot.Descendants("message");
+
+            // Add a graphic for each message.
+            foreach (var message in messages)
+            {
+                Graphic messageGraphic = GraphicFromAttributes(message.Descendants().ToList());
+                militaryGraphicsOverlay.Graphics.Add(messageGraphic);
+            }
+        }
+
+        private Graphic GraphicFromAttributes(List<XElement> graphicAttributes)
+        {
+            // Get the geometry and the spatial reference from the message elements.
+            XElement geometryAttribute = graphicAttributes.First(attr => attr.Name == "_control_points");
+            XElement spatialReferenceAttr = graphicAttributes.First(attr => attr.Name == "_wkid");
+
+            // Split the geometry field into a list of points.
+            Array pointStrings = geometryAttribute.Value.Split(';');
+
+            // Create a point collection in the correct spatial reference.
+            int wkid = Convert.ToInt32(spatialReferenceAttr.Value);
+            SpatialReference pointSR = SpatialReference.Create(wkid);
+            PointCollection graphicPoints = new PointCollection(pointSR);
+
+            // Add a point for each point in the list.
+            foreach (string pointString in pointStrings)
+            {
+                if (!String.IsNullOrEmpty(pointString))
+                {
+                    var coords = pointString.Split(',');
+                    graphicPoints.Add(Convert.ToDouble(coords[0], CultureInfo.InvariantCulture), Convert.ToDouble(coords[1], CultureInfo.InvariantCulture));
+                }
+                
+            }
+
+            // Create a multipoint from the point collection.
+            Multipoint graphicMultipoint = new Multipoint(graphicPoints);
+
+            // Create the graphic from the multipoint.
+            Graphic messageGraphic = new Graphic(graphicMultipoint);
+
+            // Add all of the message's attributes to the graphic (some of these are used for rendering).
+            foreach (XElement attr in graphicAttributes)
+            {
+                messageGraphic.Attributes[attr.Name.ToString()] = attr.Value;
+            }
+
+            return messageGraphic;
+        }
+
+
+
+
+
+
+        #region Buttons Events
+
+        public void CreatePoint()
         {
             // Create a point geometry.
-            var dumeBeachPoint = new MapPoint(-118.8066, 34.0006, SpatialReferences.Wgs84);
-
-            // Create a symbol to define how the point is displayed.
-            var pointSymbol = new SimpleMarkerSymbol
+            if (!String.IsNullOrEmpty(Latitude) && !String.IsNullOrEmpty(Longitude))
             {
-                Style = SimpleMarkerSymbolStyle.Circle,
-                Color = System.Drawing.Color.Orange,
-                Size = 10.0
-            };
+                MapPoint newPoint = new MapPoint(Double.Parse(Longitude), Double.Parse(Latitude), SpatialReferences.Wgs84);
 
-            // Add an outline to the symbol.
-            pointSymbol.Outline = new SimpleLineSymbol
-            {
-                Style = SimpleLineSymbolStyle.Solid,
-                Color = System.Drawing.Color.Blue,
-                Width = 2.0
-            };
+                // Create a symbol to define how the point is displayed.
+                SimpleMarkerSymbol pointSymbol = new SimpleMarkerSymbol
+                {
+                    //Style = SimpleMarkerSymbolStyle.Circle,
+                    //Color = System.Drawing.Color.Orange,
+                    Size = 30.0
+                };
 
-            // Create a point graphic with the geometry and symbol.
-            return new Graphic(dumeBeachPoint, pointSymbol);
+                /*
+                // Add an outline to the symbol.
+                pointSymbol.Outline = new SimpleLineSymbol
+                {
+                    Style = SimpleLineSymbolStyle.Solid,
+                    Color = System.Drawing.Color.Blue,
+                    Width = 2.0
+                };
+                */
 
+                //Graphic pointGraphic = new Graphic(newPoint, pointSymbol);
+                Graphic pointGraphic = new Graphic(newPoint);
+
+                pointGraphic.Attributes["sidc"] = "10061000001209001836";
+
+                // Create a point graphic with the geometry and symbol.
+                pointsGraphicsOverlay.Graphics.Add(pointGraphic);
+            }
         }
+
+        public void MovePoint()
+        {
+            MapPoint newPoint = new MapPoint(Double.Parse(Longitude), Double.Parse(Latitude), SpatialReferences.Wgs84);
+            pointsGraphicsOverlay.Graphics[0].Geometry = newPoint;
+        }
+
+
+
+        #endregion
+
+
     }
 }

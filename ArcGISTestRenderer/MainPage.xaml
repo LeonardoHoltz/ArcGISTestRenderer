@@ -5,7 +5,6 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:esri="using:Esri.ArcGISRuntime.UI.Controls"
-    xmlns:esri2="using:Esri.ArcGISRuntime.UI.Controls.GeoView"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
@@ -14,9 +13,37 @@
     </Page.Resources>
 
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel
+            Background="DarkGray"
+            Grid.Column="0">
+            <TextBox
+                Margin="5"
+                PlaceholderText="Latitude"
+                Text="{x:Bind MapViewModel.Latitude, Mode=TwoWay}"/>
+            <TextBox
+                Margin="5"
+                PlaceholderText="Longitude"
+                Text="{x:Bind MapViewModel.Longitude, Mode=TwoWay}"/>
+            <Button
+                x:Name="PointButton"
+                Margin="5"
+                Content="Criar ponto"
+                Click="CreatePointButton_Click"/>
+            <Button
+                x:Name="ChangeButton"
+                Margin="5"
+                Content="Mover ponto"
+                Click="MovePointButton_Click"/>
+        </StackPanel>
         <esri:MapView
             x:Name="MapViewTest"
+            Grid.Column="1"
             Map="{x:Bind MapViewModel.Map}"
+            GeoViewTapped="MapViewTest_GeoViewTapped"
             />
     </Grid>
 </Page>
