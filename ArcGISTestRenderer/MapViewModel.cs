@@ -14,6 +14,7 @@ using System.IO;
 using System.Xml.Linq;
 using System.Globalization;
 using Esri.ArcGISRuntime.Data;
+using Esri.ArcGISRuntime.Mapping.Labeling;
 
 namespace ArcGISTestRenderer
 {
@@ -92,7 +93,30 @@ namespace ArcGISTestRenderer
             string path = Directory.GetCurrentDirectory();
             DictionarySymbolStyle mil2525DStyle = await DictionarySymbolStyle.CreateFromFileAsync(path + "\\mil2525d.stylx");
             militaryGraphicsOverlay.Renderer = new DictionaryRenderer(mil2525DStyle);
-            pointsGraphicsOverlay.Renderer = new DictionaryRenderer(mil2525DStyle);
+            //pointsGraphicsOverlay.Renderer = new DictionaryRenderer(mil2525DStyle);
+
+            TextSymbol textSymbolLargeCities = new TextSymbol
+            {
+                Color = System.Drawing.Color.Blue,
+                HaloColor = System.Drawing.Color.White,
+                HaloWidth = 2,
+                FontFamily = "Arial",
+                FontWeight = FontWeight.Bold,
+                Size = 40
+            };
+
+            LabelDefinition labelDefLarge = new LabelDefinition(new SimpleLabelExpression("[NAME]"), textSymbolLargeCities)
+            {
+                //WhereClause = "[test] = city",
+                //TextSymbol = textSymbolLargeCities,
+                //Expression = new ArcadeLabelExpression("return $feature.name;"),
+                //Expression = new SimpleLabelExpression("[NAME]"),
+                Placement = Esri.ArcGISRuntime.ArcGISServices.LabelingPlacement.PointBelowCenter
+                //Placement = Esri.ArcGISRuntime.ArcGISServices.LabelingPlacement.LineBelowStart
+            };
+
+            pointsGraphicsOverlay.LabelDefinitions.Add(labelDefLarge);
+            pointsGraphicsOverlay.LabelsEnabled = true;
 
             LoadMilitaryMessages();
             Latitude = "0";
@@ -161,9 +185,6 @@ namespace ArcGISTestRenderer
 
 
 
-
-
-
         #region Buttons Events
 
         public void CreatePoint()
@@ -176,12 +197,12 @@ namespace ArcGISTestRenderer
                 // Create a symbol to define how the point is displayed.
                 SimpleMarkerSymbol pointSymbol = new SimpleMarkerSymbol
                 {
-                    //Style = SimpleMarkerSymbolStyle.Circle,
-                    //Color = System.Drawing.Color.Orange,
+                    Style = SimpleMarkerSymbolStyle.Circle,
+                    Color = System.Drawing.Color.Orange,
                     Size = 30.0
                 };
 
-                /*
+                
                 // Add an outline to the symbol.
                 pointSymbol.Outline = new SimpleLineSymbol
                 {
@@ -189,12 +210,14 @@ namespace ArcGISTestRenderer
                     Color = System.Drawing.Color.Blue,
                     Width = 2.0
                 };
-                */
+                
 
-                //Graphic pointGraphic = new Graphic(newPoint, pointSymbol);
-                Graphic pointGraphic = new Graphic(newPoint);
+                Graphic pointGraphic = new Graphic(newPoint, pointSymbol);
+                //Graphic pointGraphic = new Graphic(newPoint);
 
                 pointGraphic.Attributes["sidc"] = "10061000001209001836";
+                pointGraphic.Attributes["NAME"] = "Bom dia";
+                pointGraphic.Attributes["test"] = "city";
 
                 // Create a point graphic with the geometry and symbol.
                 pointsGraphicsOverlay.Graphics.Add(pointGraphic);
@@ -207,7 +230,17 @@ namespace ArcGISTestRenderer
             pointsGraphicsOverlay.Graphics[0].Geometry = newPoint;
         }
 
+        public void CreatePolygon()
+        {
+            PolygonBuilder polygonBuilder = new PolygonBuilder(SpatialReferences.WebMercator);
+            polygonBuilder.AddPoint(x: -20e5, y: 20e5);
+            polygonBuilder.AddPoint(x: 20e5, y: 20e5);
+            polygonBuilder.AddPoint(x: -20e5, y: -20e5);
+            polygonBuilder.AddPoint(x: -20e5, y: -20e5);
 
+            Graphic polygonGraphic = new Graphic(polygonBuilder.ToGeometry());
+
+        }
 
         #endregion
 
