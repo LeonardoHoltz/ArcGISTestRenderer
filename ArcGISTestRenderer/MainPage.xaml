@@ -34,10 +34,10 @@
                 Content="Criar ponto"
                 Click="CreatePointButton_Click"/>
             <Button
-                x:Name="ChangeButton"
                 Margin="5"
-                Content="Mover ponto"
-                Click="MovePointButton_Click"/>
+                Content="Terminar"
+                Command="{x:Bind SketchEditor.CompleteCommand}"/>
+            <Slider x:Name="ScaleSlider" Width="150" Minimum="1" Maximum="10" Value="{x:Bind MapViewModel.SymbolsScale, Mode=TwoWay}"/>
         </StackPanel>
         <esri:MapView
             x:Name="MapViewTest"

@@ -15,6 +15,8 @@ using System.Xml.Linq;
 using System.Globalization;
 using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Mapping.Labeling;
+using Esri.ArcGISRuntime.UI.Controls;
+using System.Drawing;
 
 namespace ArcGISTestRenderer
 {
@@ -71,12 +73,43 @@ namespace ArcGISTestRenderer
             }
         }
 
+        private int _symbolsScale;
+        public int SymbolsScale
+        {
+            get
+            {
+                return _symbolsScale;
+            }
+            set
+            {
+                _symbolsScale = value;
+                (pointsGraphicsOverlay.Renderer as DictionaryRenderer).ScaleExpression = new Esri.ArcGISRuntime.ArcadeExpression((_symbolsScale/10.0).ToString(CultureInfo.InvariantCulture));
+            }
+        }
+
+        private bool lineBeingMoved { get; set; } = false;
+
+        private SimpleLineSymbol lineSymbol = new SimpleLineSymbol(SimpleLineSymbolStyle.DashDot, Color.Blue, 1);
+
+        SimpleMarkerSymbol anchorSymbol = new SimpleMarkerSymbol
+        {
+            Style = SimpleMarkerSymbolStyle.Circle,
+            Color = System.Drawing.Color.Transparent,
+            Size = 0.0,
+            Outline = new SimpleLineSymbol
+            {
+                Style = SimpleLineSymbolStyle.Solid,
+                Color = System.Drawing.Color.Transparent,
+                Width = 0.0
+            }
+        };
 
         public MapViewModel()
         {
             SetupMap();
             CreateGraphics();
         }
+
 
         private void SetupMap()
         {
@@ -93,7 +126,9 @@ namespace ArcGISTestRenderer
             string path = Directory.GetCurrentDirectory();
             DictionarySymbolStyle mil2525DStyle = await DictionarySymbolStyle.CreateFromFileAsync(path + "\\mil2525d.stylx");
             militaryGraphicsOverlay.Renderer = new DictionaryRenderer(mil2525DStyle);
-            //pointsGraphicsOverlay.Renderer = new DictionaryRenderer(mil2525DStyle);
+            pointsGraphicsOverlay.Renderer = new DictionaryRenderer(mil2525DStyle);
+            
+
 
             TextSymbol textSymbolLargeCities = new TextSymbol
             {
@@ -101,18 +136,14 @@ namespace ArcGISTestRenderer
                 HaloColor = System.Drawing.Color.White,
                 HaloWidth = 2,
                 FontFamily = "Arial",
-                FontWeight = FontWeight.Bold,
-                Size = 40
+                Size = 20
             };
 
             LabelDefinition labelDefLarge = new LabelDefinition(new SimpleLabelExpression("[NAME]"), textSymbolLargeCities)
             {
-                //WhereClause = "[test] = city",
-                //TextSymbol = textSymbolLargeCities,
-                //Expression = new ArcadeLabelExpression("return $feature.name;"),
-                //Expression = new SimpleLabelExpression("[NAME]"),
-                Placement = Esri.ArcGISRuntime.ArcGISServices.LabelingPlacement.PointBelowCenter
-                //Placement = Esri.ArcGISRuntime.ArcGISServices.LabelingPlacement.LineBelowStart
+                WhereClause = "[TEST] = 'city'",
+                Placement = Esri.ArcGISRuntime.ArcGISServices.LabelingPlacement.PointCenterCenter,
+                TextLayout = LabelTextLayout.Horizontal
             };
 
             pointsGraphicsOverlay.LabelDefinitions.Add(labelDefLarge);
@@ -194,40 +225,65 @@ namespace ArcGISTestRenderer
             {
                 MapPoint newPoint = new MapPoint(Double.Parse(Longitude), Double.Parse(Latitude), SpatialReferences.Wgs84);
 
-                // Create a symbol to define how the point is displayed.
-                SimpleMarkerSymbol pointSymbol = new SimpleMarkerSymbol
-                {
-                    Style = SimpleMarkerSymbolStyle.Circle,
-                    Color = System.Drawing.Color.Orange,
-                    Size = 30.0
-                };
 
-                
-                // Add an outline to the symbol.
-                pointSymbol.Outline = new SimpleLineSymbol
-                {
-                    Style = SimpleLineSymbolStyle.Solid,
-                    Color = System.Drawing.Color.Blue,
-                    Width = 2.0
-                };
-                
+                //Graphic pointGraphic = new Graphic(newPoint, pointSymbol);
+                Graphic pointGraphic = new Graphic(newPoint);
 
-                Graphic pointGraphic = new Graphic(newPoint, pointSymbol);
-                //Graphic pointGraphic = new Graphic(newPoint);
-
-                pointGraphic.Attributes["sidc"] = "10061000001209001836";
-                pointGraphic.Attributes["NAME"] = "Bom dia";
-                pointGraphic.Attributes["test"] = "city";
+                //pointGraphic.Attributes["sidc"] = "10019800001000000000"; //undefined
+                //pointGraphic.Attributes["sidc"] = null; // unknown
+                pointGraphic.Attributes["sidc"] = 10065400001103000000;
+                pointGraphic.Attributes["graphicType"] = "mainSymbol";
+                //pointGraphic.Attributes["NAME"] = "Bom dia";
+                //pointGraphic.Attributes["TEST"] = "city";
 
                 // Create a point graphic with the geometry and symbol.
                 pointsGraphicsOverlay.Graphics.Add(pointGraphic);
+
+
+                // Anchor Point:
+                MapPoint anchorPoint = new MapPoint(Double.Parse(Longitude) - 20.0, Double.Parse(Latitude) + 10.0, SpatialReferences.Wgs84);
+
+                Graphic anchorGraphic = new Graphic(anchorPoint, anchorSymbol);
+                anchorGraphic.Attributes["NAME"] = "<BOL>Bom dia</BOL> Teste2";
+                anchorGraphic.Attributes["TEST"] = "city";
+                anchorGraphic.Attributes["graphicType"] = "anchor";
+
+                pointsGraphicsOverlay.Graphics.Add(anchorGraphic);
+
+                PolylineBuilder lineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
+                lineBuilder.AddPoint(newPoint);
+                lineBuilder.AddPoint(anchorPoint);
+                Graphic lineGraphic = new Graphic(lineBuilder.ToGeometry(), lineSymbol);
+                lineGraphic.Attributes["graphicType"] = "anchorLine";
+                lineGraphic.ZIndex = pointGraphic.ZIndex - 5;
+                pointsGraphicsOverlay.Graphics.Add(lineGraphic);
             }
         }
 
-        public void MovePoint()
+        public async void MovePoint(SketchEditor sketchEditor, Graphic graphic)
         {
-            MapPoint newPoint = new MapPoint(Double.Parse(Longitude), Double.Parse(Latitude), SpatialReferences.Wgs84);
-            pointsGraphicsOverlay.Graphics[0].Geometry = newPoint;
+            // linha está atrapalhando o sketch editor na hora de selecionar o ponto
+            // fazer com que a geometria seja colocada no lugar onde o mouse soltou
+            Geometry oldGeometry = graphic.Geometry;
+            GraphicsOverlay associatedOverlay = graphic.GraphicsOverlay;
+
+            Geometry newGeometry = await sketchEditor.StartAsync(graphic.Geometry);
+            graphic.Geometry = newGeometry;
+
+            Graphic lineGraphic = associatedOverlay.Graphics.FirstOrDefault(lineG => lineG.Geometry.GeometryType == GeometryType.Polyline); 
+            Polyline line = (Polyline)lineGraphic.Geometry;
+            MapPoint startPoint = line.Parts[0].StartPoint;
+            MapPoint endGeometry = (MapPoint)newGeometry;
+            PolylineBuilder newLineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
+
+            // try to use GeometryEngine.Project next time
+            string latLon = CoordinateFormatter.ToLatitudeLongitude(endGeometry, LatitudeLongitudeFormat.DegreesMinutesSeconds, 16);
+            MapPoint endPoint = CoordinateFormatter.FromLatitudeLongitude(latLon, SpatialReferences.Wgs84);
+
+            newLineBuilder.AddPoint(startPoint);
+            newLineBuilder.AddPoint(endPoint);
+
+            lineGraphic.Geometry = newLineBuilder.ToGeometry();
         }
 
         public void CreatePolygon()
