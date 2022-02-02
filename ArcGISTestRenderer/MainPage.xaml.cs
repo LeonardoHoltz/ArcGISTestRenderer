@@ -21,6 +21,7 @@ using Esri.ArcGISRuntime.Data;
 using Windows.UI.Popups;
 using Esri.ArcGISRuntime.UI;
 using System.ComponentModel;
+using Esri.ArcGISRuntime.Symbology;
 
 namespace ArcGISTestRenderer
 {
@@ -42,6 +43,8 @@ namespace ArcGISTestRenderer
             }
         }
 
+        public bool IsLabelBeingMoved { get; set; } = false;
+
         public MainPage()
         {
             this.InitializeComponent();
@@ -59,6 +62,22 @@ namespace ArcGISTestRenderer
             MapViewTest.GraphicsOverlays.Add(MapViewModel.militaryGraphicsOverlay);
             MapViewTest.PointerReleased += MapViewTest_PointerReleased;
             MapViewTest.PointerPressed += MapViewTest_PointerPressed;
+            MapViewTest.PointerWheelChanged += MapViewTest_PointerWheelChanged;
+            MapViewTest.SelectionProperties.Color = Color.Transparent;
+        }
+
+        private void MapViewTest_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
+        {
+
+        }
+
+        private void MapViewTest_PointerReleased(object sender, PointerRoutedEventArgs e)
+        {
+
+            if (!IsLabelBeingMoved)
+            {
+                SketchEditor.Stop();
+            }
         }
 
         private async void MapViewTest_PointerPressed(object sender, PointerRoutedEventArgs e)
@@ -66,7 +85,7 @@ namespace ArcGISTestRenderer
             Windows.Foundation.Point point = Windows.UI.Core.CoreWindow.GetForCurrentThread().PointerPosition;
             point.X = point.X - 200;
             point.Y = point.Y - 40;
-            double tolerance = 15d;
+            double tolerance = 100d;
             bool onlyReturnPopups = false;
             try
             {
@@ -120,18 +139,56 @@ namespace ArcGISTestRenderer
             }
         }
 
-
-        private void MapViewTest_PointerReleased(object sender, PointerRoutedEventArgs e)
-        {
-            SketchEditor.Stop();
-        }
-
         private void SetupSketchEditor()
         {
             DataContext = MapViewTest.SketchEditor;
             SketchEditor = MapViewTest.SketchEditor;
             SketchEditor.Style.ShowNumbersForVertices = false;
+
+            SimpleMarkerSymbol anchorPreviewSymbol = new SimpleMarkerSymbol
+            {
+                Style = SimpleMarkerSymbolStyle.Square,
+                Color = System.Drawing.Color.Transparent,
+                Size = 70.0,
+                Outline = new SimpleLineSymbol
+                {
+                    Style = SimpleLineSymbolStyle.Dash,
+                    Color = System.Drawing.Color.Blue,
+                    Width = 1.0,
+                }
+            };
+
+            SimpleMarkerSymbol anchorCurrentPlaceSymbol = new SimpleMarkerSymbol
+            {
+                Style = SimpleMarkerSymbolStyle.Square,
+                Color = System.Drawing.Color.Transparent,
+                Size = 70.0,
+                Outline = new SimpleLineSymbol
+                {
+                    Style = SimpleLineSymbolStyle.Null,
+                    Color = System.Drawing.Color.Transparent,
+                    Width = 0.0,
+                }
+            };
+            
+
+            //SketchEditor.Style.VertexSymbol = anchorSymbol;
+            SketchEditor.Style.FeedbackVertexSymbol = anchorPreviewSymbol;
+            SketchEditor.Style.SelectedVertexSymbol = anchorCurrentPlaceSymbol;
             SketchEditor.PropertyChanged += SketchEditor_PropertyChanged;
+            SketchEditor.GeometryChanged += SketchEditor_GeometryChanged;
+            SketchEditor.SelectedVertexChanged += SketchEditor_SelectedVertexChanged;
+        }
+
+        private void SketchEditor_SelectedVertexChanged(object sender, VertexChangedEventArgs e)
+        {
+            IsLabelBeingMoved = true;
+        }
+
+        private void SketchEditor_GeometryChanged(object sender, GeometryChangedEventArgs e)
+        {
+            SketchEditor.Stop();
+            IsLabelBeingMoved = false;
         }
 
         private void SketchEditor_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -139,8 +196,8 @@ namespace ArcGISTestRenderer
             if (SketchEditor.EditConfiguration != null)
             {
                 SketchEditor.EditConfiguration.RequireSelectionBeforeDrag = false;
-                //SketchEditor.EditConfiguration.AllowVertexEditing = false; Isso n deixa mexer só em um ponto da linha, que é o que eu quero
-                //SketchEditor.EditConfiguration.AllowRotate = false;
+                SketchEditor.EditConfiguration.AllowRotate = false;
+                SketchEditor.ClearVertexSelection();
             }
         }
 

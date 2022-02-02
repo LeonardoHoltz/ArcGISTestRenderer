@@ -87,7 +87,7 @@ namespace ArcGISTestRenderer
             }
         }
 
-        private bool lineBeingMoved { get; set; } = false;
+        public Geometry SketchGeometry { get; set; }
 
         private SimpleLineSymbol lineSymbol = new SimpleLineSymbol(SimpleLineSymbolStyle.DashDot, Color.Blue, 1);
 
@@ -124,10 +124,9 @@ namespace ArcGISTestRenderer
             militaryGraphicsOverlay = new GraphicsOverlay();
 
             string path = Directory.GetCurrentDirectory();
-            DictionarySymbolStyle mil2525DStyle = await DictionarySymbolStyle.CreateFromFileAsync(path + "\\mil2525d.stylx");
+            DictionarySymbolStyle mil2525DStyle = await DictionarySymbolStyle.CreateFromFileAsync(path + "\\Restaurant.stylx");
             militaryGraphicsOverlay.Renderer = new DictionaryRenderer(mil2525DStyle);
             pointsGraphicsOverlay.Renderer = new DictionaryRenderer(mil2525DStyle);
-            
 
 
             TextSymbol textSymbolLargeCities = new TextSymbol
@@ -149,7 +148,7 @@ namespace ArcGISTestRenderer
             pointsGraphicsOverlay.LabelDefinitions.Add(labelDefLarge);
             pointsGraphicsOverlay.LabelsEnabled = true;
 
-            LoadMilitaryMessages();
+            //LoadMilitaryMessages();
             Latitude = "0";
             Longitude = "0";
             CreatePoint();
@@ -196,7 +195,6 @@ namespace ArcGISTestRenderer
                     var coords = pointString.Split(',');
                     graphicPoints.Add(Convert.ToDouble(coords[0], CultureInfo.InvariantCulture), Convert.ToDouble(coords[1], CultureInfo.InvariantCulture));
                 }
-                
             }
 
             // Create a multipoint from the point collection.
@@ -225,16 +223,10 @@ namespace ArcGISTestRenderer
             {
                 MapPoint newPoint = new MapPoint(Double.Parse(Longitude), Double.Parse(Latitude), SpatialReferences.Wgs84);
 
-
-                //Graphic pointGraphic = new Graphic(newPoint, pointSymbol);
                 Graphic pointGraphic = new Graphic(newPoint);
 
-                //pointGraphic.Attributes["sidc"] = "10019800001000000000"; //undefined
-                //pointGraphic.Attributes["sidc"] = null; // unknown
                 pointGraphic.Attributes["sidc"] = 10065400001103000000;
                 pointGraphic.Attributes["graphicType"] = "mainSymbol";
-                //pointGraphic.Attributes["NAME"] = "Bom dia";
-                //pointGraphic.Attributes["TEST"] = "city";
 
                 // Create a point graphic with the geometry and symbol.
                 pointsGraphicsOverlay.Graphics.Add(pointGraphic);
@@ -251,12 +243,48 @@ namespace ArcGISTestRenderer
                 pointsGraphicsOverlay.Graphics.Add(anchorGraphic);
 
                 PolylineBuilder lineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
+
                 lineBuilder.AddPoint(newPoint);
                 lineBuilder.AddPoint(anchorPoint);
                 Graphic lineGraphic = new Graphic(lineBuilder.ToGeometry(), lineSymbol);
                 lineGraphic.Attributes["graphicType"] = "anchorLine";
                 lineGraphic.ZIndex = pointGraphic.ZIndex - 5;
                 pointsGraphicsOverlay.Graphics.Add(lineGraphic);
+            }
+        }
+
+        private void LengthenLine(PointF startPoint, ref PointF endPoint, float pixelCount)
+        {
+            if (startPoint.Equals(endPoint))
+                return; // not a line
+
+            double dx = endPoint.X - startPoint.X;
+            double dy = endPoint.Y - startPoint.Y;
+            if (dx == 0)
+            {
+                // vertical line:
+                if (endPoint.Y < startPoint.Y)
+                    endPoint.Y -= pixelCount;
+                else
+                    endPoint.Y += pixelCount;
+            }
+            else if (dy == 0)
+            {
+                // horizontal line:
+                if (endPoint.X < startPoint.X)
+                    endPoint.X -= pixelCount;
+                else
+                    endPoint.X += pixelCount;
+            }
+            else
+            {
+                // non-horizontal, non-vertical line:
+                double length = Math.Sqrt(dx * dx + dy * dy);
+                double scale = (length + pixelCount) / length;
+                dx *= scale;
+                dy *= scale;
+                endPoint.X = startPoint.X + Convert.ToSingle(dx);
+                endPoint.Y = startPoint.Y + Convert.ToSingle(dy);
             }
         }
 
@@ -273,15 +301,13 @@ namespace ArcGISTestRenderer
             Graphic lineGraphic = associatedOverlay.Graphics.FirstOrDefault(lineG => lineG.Geometry.GeometryType == GeometryType.Polyline); 
             Polyline line = (Polyline)lineGraphic.Geometry;
             MapPoint startPoint = line.Parts[0].StartPoint;
-            MapPoint endGeometry = (MapPoint)newGeometry;
+            MapPoint endGeometry = (MapPoint)graphic.Geometry;
             PolylineBuilder newLineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
 
-            // try to use GeometryEngine.Project next time
-            string latLon = CoordinateFormatter.ToLatitudeLongitude(endGeometry, LatitudeLongitudeFormat.DegreesMinutesSeconds, 16);
-            MapPoint endPoint = CoordinateFormatter.FromLatitudeLongitude(latLon, SpatialReferences.Wgs84);
+            MapPoint lineEndPoint = (MapPoint)GeometryEngine.Project(endGeometry, SpatialReferences.Wgs84);
 
             newLineBuilder.AddPoint(startPoint);
-            newLineBuilder.AddPoint(endPoint);
+            newLineBuilder.AddPoint(lineEndPoint);
 
             lineGraphic.Geometry = newLineBuilder.ToGeometry();
         }
