@@ -109,10 +109,12 @@ namespace ArcGISTestRenderer
 
         public void SetNewPixelDistance(double unitsPerPixel)
         {
-            double dx = MainPoint.X - AnchorPoint.X;
-            double dy = MainPoint.Y - AnchorPoint.Y;
-            double lengthLatLon = Math.Sqrt(dx * dx + dy * dy);
-            double lenghtMeters = lengthLatLon * DEGREE_TO_METERS;
+            MapPoint mapMainPoint = (MapPoint)GeometryEngine.Project(LineGeometry.Parts[0].StartPoint, SpatialReferences.WebMercator);
+            MapPoint mapAnchorPoint = (MapPoint)GeometryEngine.Project(LineGeometry.Parts[0].EndPoint, SpatialReferences.WebMercator);
+
+            double dx = -(mapMainPoint.X - mapAnchorPoint.X);
+            double dy = -(mapMainPoint.Y - mapAnchorPoint.Y);
+            double lenghtMeters = Math.Sqrt(dx * dx + dy * dy);
             pixelDistance = (int)Math.Floor(lenghtMeters / unitsPerPixel);
         }
 
@@ -120,25 +122,25 @@ namespace ArcGISTestRenderer
         {
             double intendedDistanceInUnits = unitsPerPixel * pixelDistance;
 
-            double dx = -(MainPoint.X - AnchorPoint.X);
-            double dy = -(MainPoint.Y - AnchorPoint.Y);
-            double lengthLatLon = Math.Sqrt(dx * dx + dy * dy);
-            double lenghtMeters = lengthLatLon * DEGREE_TO_METERS;
+            MapPoint mapMainPoint = (MapPoint)GeometryEngine.Project(LineGeometry.Parts[0].StartPoint, SpatialReferences.WebMercator);
+            MapPoint mapAnchorPoint = (MapPoint)GeometryEngine.Project(LineGeometry.Parts[0].EndPoint, SpatialReferences.WebMercator);
 
+            double dx = -(mapMainPoint.X - mapAnchorPoint.X);
+            double dy = -(mapMainPoint.Y - mapAnchorPoint.Y);
+
+            double lenghtMeters = Math.Sqrt(dx * dx + dy * dy);
             double scalePercentual = intendedDistanceInUnits / lenghtMeters;
 
-            // Essas funções de transformação devem levar em conta a deformação que a projeção do mercator realiza por meio de uma função logaritmica
             dx = dx * scalePercentual;
             dy = dy * scalePercentual;
-            AnchorPoint = new MapPoint(MainPoint.X + dx, MainPoint.Y + dy);
-            //AnchorGraphic.Geometry = AnchorPoint;
 
-            PolylineBuilder lineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
-            MapPoint startPoint = new MapPoint(MainPoint.X, MainPoint.Y);
-            MapPoint endPoint = new MapPoint(AnchorPoint.X, AnchorPoint.Y);
+            mapAnchorPoint = new MapPoint(mapMainPoint.X + dx, mapMainPoint.Y + dy);
+            PolylineBuilder lineBuilder = new PolylineBuilder(SpatialReferences.WebMercator);
+            MapPoint startPoint = new MapPoint(mapMainPoint.X, mapMainPoint.Y);
+            MapPoint endPoint = new MapPoint(mapAnchorPoint.X, mapAnchorPoint.Y);
             lineBuilder.AddPoint(startPoint);
             lineBuilder.AddPoint(endPoint);
-            LineGeometry = lineBuilder.ToGeometry();
+            LineGeometry = (Polyline)GeometryEngine.Project(lineBuilder.ToGeometry(), SpatialReferences.Wgs84);
             LineGraphic.Geometry = LineGeometry;
         }
     }

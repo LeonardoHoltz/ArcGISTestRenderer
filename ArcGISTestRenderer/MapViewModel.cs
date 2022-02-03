@@ -156,8 +156,8 @@ namespace ArcGISTestRenderer
             pointsGraphicsOverlay.LabelsEnabled = true;
 
             //LoadMilitaryMessages();
-            Latitude = "30";
-            Longitude = "30";
+            Latitude = "10";
+            Longitude = "10";
 
             CreatePoint();
         }
