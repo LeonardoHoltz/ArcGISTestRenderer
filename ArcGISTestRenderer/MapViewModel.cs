@@ -142,9 +142,15 @@ namespace ArcGISTestRenderer
             LabelDefinition labelDefLarge = new LabelDefinition(new SimpleLabelExpression("[NAME]"), textSymbolLargeCities)
             {
                 WhereClause = "[TEST] = 'city'",
-                Placement = Esri.ArcGISRuntime.ArcGISServices.LabelingPlacement.PointCenterCenter,
-                TextLayout = LabelTextLayout.Horizontal
+                Placement = Esri.ArcGISRuntime.ArcGISServices.LabelingPlacement.LineCenterEnd,
+                TextLayout = LabelTextLayout.Horizontal,
             };
+            labelDefLarge.OverrunStrategy = LabelOverrunStrategy.Allow;
+            labelDefLarge.RemoveDuplicatesStrategy = LabelRemoveDuplicatesStrategy.None;
+            labelDefLarge.RepeatStrategy = LabelRepeatStrategy.Repeat;
+            labelDefLarge.StackAlignment = LabelStackAlignment.Dynamic;
+            labelDefLarge.LineConnection = LabelLineConnection.None;
+            labelDefLarge.LabelOverlapStrategy = LabelOverlapStrategy.Allow;
 
             pointsGraphicsOverlay.LabelDefinitions.Add(labelDefLarge);
             pointsGraphicsOverlay.LabelsEnabled = true;
@@ -233,7 +239,6 @@ namespace ArcGISTestRenderer
             {
                 Contact contact = new Contact(Double.Parse(Latitude), Double.Parse(Longitude), UnitsPerPixel);
                 pointsGraphicsOverlay.Graphics.Add(contact.MainGraphic);
-                pointsGraphicsOverlay.Graphics.Add(contact.AnchorGraphic);
                 pointsGraphicsOverlay.Graphics.Add(contact.LineGraphic);
                 ContactsAdded.Add(contact);
             }
@@ -241,11 +246,9 @@ namespace ArcGISTestRenderer
 
         public void MovePoint(MapPoint newAnchor, Graphic editedAnchor)
         {
-            Contact contactAssociated = ContactsAdded.FirstOrDefault(contact => contact.AnchorGraphic == editedAnchor);
+            Contact contactAssociated = ContactsAdded.FirstOrDefault(contact => contact.LineGraphic == editedAnchor);
             
             MapPoint newAnchorPoint = (MapPoint)GeometryEngine.Project(newAnchor, SpatialReferences.Wgs84);
-            contactAssociated.AnchorPoint = newAnchorPoint;
-            contactAssociated.AnchorGraphic.Geometry = newAnchorPoint;
 
             // move line endpoint to the new anchor
             PolylineBuilder lineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
@@ -254,6 +257,7 @@ namespace ArcGISTestRenderer
             contactAssociated.LineGeometry = lineBuilder.ToGeometry();
             contactAssociated.LineGraphic.Geometry = contactAssociated.LineGeometry;
             contactAssociated.SetNewPixelDistance(UnitsPerPixel);
+            contactAssociated.AnchorPoint = newAnchorPoint;
         }
 
         #endregion

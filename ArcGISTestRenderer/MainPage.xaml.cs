@@ -32,7 +32,7 @@ namespace ArcGISTestRenderer
 
         public bool IsLabelBeingMoved { get; set; } = false;
 
-        public Graphic editedAnchorGraphic { get; set; } = null;
+        public Graphic editedLineGraphic { get; set; } = null;
 
         public double CurrentMapScale { get; set; }
 
@@ -69,12 +69,12 @@ namespace ArcGISTestRenderer
 
         private void MapViewTest_PointerMoved(object sender, PointerRoutedEventArgs e)
         { 
-            if(IsLabelBeingMoved && editedAnchorGraphic != null)
+            if(IsLabelBeingMoved && editedLineGraphic != null)
             {
                 PointerPoint pointerPoint = e.GetCurrentPoint(sender as UIElement);
                 Windows.Foundation.Point p = pointerPoint.Position;
                 MapPoint newAnchor = MapViewTest.ScreenToLocation(p);
-                MapViewModel.MovePoint(newAnchor, editedAnchorGraphic);
+                MapViewModel.MovePoint(newAnchor, editedLineGraphic);
             }
         }
 
@@ -86,7 +86,7 @@ namespace ArcGISTestRenderer
                 IsPanEnabled = true
             };
             MapViewTest.InteractionOptions = interactionOptions;
-            editedAnchorGraphic = null;
+            editedLineGraphic = null;
         }
 
         private async void MapViewTest_PointerPressed(object sender, PointerRoutedEventArgs e)
@@ -105,10 +105,10 @@ namespace ArcGISTestRenderer
 
                 if (identifyResults.Graphics.Count > 0)
                 {
-                    Graphic g = identifyResults.Graphics.FirstOrDefault(graphic => graphic.Attributes["graphicType"].Equals("anchorPoint"));
+                    Graphic g = identifyResults.Graphics.FirstOrDefault(graphic => graphic.Attributes["graphicType"].Equals("line"));
                     if (g != null)
                     {
-                        editedAnchorGraphic = g;
+                        editedLineGraphic = g;
                         IsLabelBeingMoved = true;
                         // block map panning
                         MapViewInteractionOptions interactionOptions = new MapViewInteractionOptions()

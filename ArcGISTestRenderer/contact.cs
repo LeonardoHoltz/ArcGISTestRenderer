@@ -26,16 +26,6 @@ namespace ArcGISTestRenderer
             set { _lineGraphic = value; }
         }
 
-        private Graphic _anchorGraphic;
-        public Graphic AnchorGraphic
-        {
-            get { return _anchorGraphic; }
-            set
-            {
-                _anchorGraphic = value;
-            }
-        }
-
         private Graphic _mainGraphic;
         public Graphic MainGraphic
         {
@@ -90,7 +80,6 @@ namespace ArcGISTestRenderer
 
         public Contact(double latitude, double longitude, double unitsPerPixel)
         {
-
             // Main Point:
             MainPoint = new MapPoint(longitude, latitude, SpatialReferences.Wgs84);
             MainGraphic = new Graphic(MainPoint);
@@ -105,11 +94,6 @@ namespace ArcGISTestRenderer
             // Anchor Point:
             AnchorPoint = new MapPoint(longitude - latLonDistance, latitude + latLonDistance, SpatialReferences.Wgs84);
 
-            AnchorGraphic = new Graphic(AnchorPoint, _anchorSymbol);
-            AnchorGraphic.Attributes["NAME"] = "<BOL>Bom dia</BOL> Teste2";
-            AnchorGraphic.Attributes["TEST"] = "city";
-            AnchorGraphic.Attributes["graphicType"] = "anchorPoint";
-
             // Line Between Main Point and Anchor Point:
             PolylineBuilder lineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
 
@@ -118,6 +102,8 @@ namespace ArcGISTestRenderer
             LineGeometry = lineBuilder.ToGeometry();
             LineGraphic = new Graphic(LineGeometry, _lineSymbol);
             LineGraphic.Attributes["graphicType"] = "line";
+            LineGraphic.Attributes["NAME"] = "<BOL>Bom dia</BOL> Teste2";
+            LineGraphic.Attributes["TEST"] = "city";
             LineGraphic.ZIndex = MainGraphic.ZIndex - 5;
         }
 
@@ -142,11 +128,10 @@ namespace ArcGISTestRenderer
             double scalePercentual = intendedDistanceInUnits / lenghtMeters;
 
             // Essas funções de transformação devem levar em conta a deformação que a projeção do mercator realiza por meio de uma função logaritmica
-            // hk = sec2φ.
             dx = dx * scalePercentual;
             dy = dy * scalePercentual;
             AnchorPoint = new MapPoint(MainPoint.X + dx, MainPoint.Y + dy);
-            AnchorGraphic.Geometry = AnchorPoint;
+            //AnchorGraphic.Geometry = AnchorPoint;
 
             PolylineBuilder lineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
             MapPoint startPoint = new MapPoint(MainPoint.X, MainPoint.Y);
