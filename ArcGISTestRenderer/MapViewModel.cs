@@ -89,23 +89,24 @@ namespace ArcGISTestRenderer
 
         public Geometry SketchGeometry { get; set; }
 
-        private SimpleLineSymbol lineSymbol = new SimpleLineSymbol(SimpleLineSymbolStyle.DashDot, Color.Blue, 1);
+        private double _unitsPerPixel;
 
-        SimpleMarkerSymbol anchorSymbol = new SimpleMarkerSymbol
+        public double UnitsPerPixel
         {
-            Style = SimpleMarkerSymbolStyle.Circle,
-            Color = System.Drawing.Color.Transparent,
-            Size = 0.0,
-            Outline = new SimpleLineSymbol
+            get { return _unitsPerPixel; }
+            set
             {
-                Style = SimpleLineSymbolStyle.Solid,
-                Color = System.Drawing.Color.Transparent,
-                Width = 0.0
+                _unitsPerPixel = value;
+                UpdateLabelDistances();
+                OnPropertyChanged();
             }
-        };
+        }
+
+        private List<Contact> ContactsAdded = new List<Contact>();
 
         public MapViewModel()
         {
+            UnitsPerPixel = 2645.8333333304759;
             SetupMap();
             CreateGraphics();
         }
@@ -149,8 +150,9 @@ namespace ArcGISTestRenderer
             pointsGraphicsOverlay.LabelsEnabled = true;
 
             //LoadMilitaryMessages();
-            Latitude = "0";
-            Longitude = "0";
+            Latitude = "30";
+            Longitude = "30";
+
             CreatePoint();
         }
 
@@ -212,6 +214,14 @@ namespace ArcGISTestRenderer
             return messageGraphic;
         }
 
+        private void UpdateLabelDistances()
+        {
+            foreach (Contact contact in ContactsAdded)
+            {
+                contact.UpdateAnchorDistance(UnitsPerPixel);
+            }
+        }
+
 
 
         #region Buttons Events
@@ -221,107 +231,29 @@ namespace ArcGISTestRenderer
             // Create a point geometry.
             if (!String.IsNullOrEmpty(Latitude) && !String.IsNullOrEmpty(Longitude))
             {
-                MapPoint newPoint = new MapPoint(Double.Parse(Longitude), Double.Parse(Latitude), SpatialReferences.Wgs84);
-
-                Graphic pointGraphic = new Graphic(newPoint);
-
-                pointGraphic.Attributes["sidc"] = 10065400001103000000;
-                pointGraphic.Attributes["graphicType"] = "mainSymbol";
-
-                // Create a point graphic with the geometry and symbol.
-                pointsGraphicsOverlay.Graphics.Add(pointGraphic);
-
-
-                // Anchor Point:
-                MapPoint anchorPoint = new MapPoint(Double.Parse(Longitude) - 20.0, Double.Parse(Latitude) + 10.0, SpatialReferences.Wgs84);
-
-                Graphic anchorGraphic = new Graphic(anchorPoint, anchorSymbol);
-                anchorGraphic.Attributes["NAME"] = "<BOL>Bom dia</BOL> Teste2";
-                anchorGraphic.Attributes["TEST"] = "city";
-                anchorGraphic.Attributes["graphicType"] = "anchor";
-
-                pointsGraphicsOverlay.Graphics.Add(anchorGraphic);
-
-                PolylineBuilder lineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
-
-                lineBuilder.AddPoint(newPoint);
-                lineBuilder.AddPoint(anchorPoint);
-                Graphic lineGraphic = new Graphic(lineBuilder.ToGeometry(), lineSymbol);
-                lineGraphic.Attributes["graphicType"] = "anchorLine";
-                lineGraphic.ZIndex = pointGraphic.ZIndex - 5;
-                pointsGraphicsOverlay.Graphics.Add(lineGraphic);
+                Contact contact = new Contact(Double.Parse(Latitude), Double.Parse(Longitude), UnitsPerPixel);
+                pointsGraphicsOverlay.Graphics.Add(contact.MainGraphic);
+                pointsGraphicsOverlay.Graphics.Add(contact.AnchorGraphic);
+                pointsGraphicsOverlay.Graphics.Add(contact.LineGraphic);
+                ContactsAdded.Add(contact);
             }
         }
 
-        private void LengthenLine(PointF startPoint, ref PointF endPoint, float pixelCount)
+        public void MovePoint(MapPoint newAnchor, Graphic editedAnchor)
         {
-            if (startPoint.Equals(endPoint))
-                return; // not a line
+            Contact contactAssociated = ContactsAdded.FirstOrDefault(contact => contact.AnchorGraphic == editedAnchor);
+            
+            MapPoint newAnchorPoint = (MapPoint)GeometryEngine.Project(newAnchor, SpatialReferences.Wgs84);
+            contactAssociated.AnchorPoint = newAnchorPoint;
+            contactAssociated.AnchorGraphic.Geometry = newAnchorPoint;
 
-            double dx = endPoint.X - startPoint.X;
-            double dy = endPoint.Y - startPoint.Y;
-            if (dx == 0)
-            {
-                // vertical line:
-                if (endPoint.Y < startPoint.Y)
-                    endPoint.Y -= pixelCount;
-                else
-                    endPoint.Y += pixelCount;
-            }
-            else if (dy == 0)
-            {
-                // horizontal line:
-                if (endPoint.X < startPoint.X)
-                    endPoint.X -= pixelCount;
-                else
-                    endPoint.X += pixelCount;
-            }
-            else
-            {
-                // non-horizontal, non-vertical line:
-                double length = Math.Sqrt(dx * dx + dy * dy);
-                double scale = (length + pixelCount) / length;
-                dx *= scale;
-                dy *= scale;
-                endPoint.X = startPoint.X + Convert.ToSingle(dx);
-                endPoint.Y = startPoint.Y + Convert.ToSingle(dy);
-            }
-        }
-
-        public async void MovePoint(SketchEditor sketchEditor, Graphic graphic)
-        {
-            // linha está atrapalhando o sketch editor na hora de selecionar o ponto
-            // fazer com que a geometria seja colocada no lugar onde o mouse soltou
-            Geometry oldGeometry = graphic.Geometry;
-            GraphicsOverlay associatedOverlay = graphic.GraphicsOverlay;
-
-            Geometry newGeometry = await sketchEditor.StartAsync(graphic.Geometry);
-            graphic.Geometry = newGeometry;
-
-            Graphic lineGraphic = associatedOverlay.Graphics.FirstOrDefault(lineG => lineG.Geometry.GeometryType == GeometryType.Polyline); 
-            Polyline line = (Polyline)lineGraphic.Geometry;
-            MapPoint startPoint = line.Parts[0].StartPoint;
-            MapPoint endGeometry = (MapPoint)graphic.Geometry;
-            PolylineBuilder newLineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
-
-            MapPoint lineEndPoint = (MapPoint)GeometryEngine.Project(endGeometry, SpatialReferences.Wgs84);
-
-            newLineBuilder.AddPoint(startPoint);
-            newLineBuilder.AddPoint(lineEndPoint);
-
-            lineGraphic.Geometry = newLineBuilder.ToGeometry();
-        }
-
-        public void CreatePolygon()
-        {
-            PolygonBuilder polygonBuilder = new PolygonBuilder(SpatialReferences.WebMercator);
-            polygonBuilder.AddPoint(x: -20e5, y: 20e5);
-            polygonBuilder.AddPoint(x: 20e5, y: 20e5);
-            polygonBuilder.AddPoint(x: -20e5, y: -20e5);
-            polygonBuilder.AddPoint(x: -20e5, y: -20e5);
-
-            Graphic polygonGraphic = new Graphic(polygonBuilder.ToGeometry());
-
+            // move line endpoint to the new anchor
+            PolylineBuilder lineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
+            lineBuilder.AddPoint(contactAssociated.MainPoint);
+            lineBuilder.AddPoint(newAnchorPoint);
+            contactAssociated.LineGeometry = lineBuilder.ToGeometry();
+            contactAssociated.LineGraphic.Geometry = contactAssociated.LineGeometry;
+            contactAssociated.SetNewPixelDistance(UnitsPerPixel);
         }
 
         #endregion

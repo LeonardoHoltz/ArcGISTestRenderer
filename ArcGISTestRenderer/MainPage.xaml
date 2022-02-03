@@ -33,10 +33,6 @@
                 Margin="5"
                 Content="Criar ponto"
                 Click="CreatePointButton_Click"/>
-            <Button
-                Margin="5"
-                Content="Terminar"
-                Command="{x:Bind SketchEditor.CompleteCommand}"/>
             <Slider x:Name="ScaleSlider" Width="150" Minimum="1" Maximum="10" Value="{x:Bind MapViewModel.SymbolsScale, Mode=TwoWay}"/>
         </StackPanel>
         <esri:MapView
