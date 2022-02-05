@@ -105,7 +105,7 @@ namespace ArcGISTestRenderer
 
                 if (identifyResults.Graphics.Count > 0)
                 {
-                    Graphic g = identifyResults.Graphics.FirstOrDefault(graphic => graphic.Attributes["graphicType"].Equals("line"));
+                    Graphic g = identifyResults.Graphics.FirstOrDefault(graphic => graphic.Attributes["graphicType"].Equals("labelLine"));
                     if (g != null)
                     {
                         editedLineGraphic = g;

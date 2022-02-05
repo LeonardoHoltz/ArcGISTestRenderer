@@ -128,36 +128,13 @@ namespace ArcGISTestRenderer
             DictionarySymbolStyle mil2525DStyle = await DictionarySymbolStyle.CreateFromFileAsync(path + "\\Restaurant.stylx");
             militaryGraphicsOverlay.Renderer = new DictionaryRenderer(mil2525DStyle);
             pointsGraphicsOverlay.Renderer = new DictionaryRenderer(mil2525DStyle);
-
-
-            TextSymbol textSymbolLargeCities = new TextSymbol
-            {
-                Color = System.Drawing.Color.Blue,
-                HaloColor = System.Drawing.Color.White,
-                HaloWidth = 2,
-                FontFamily = "Arial",
-                Size = 20
-            };
-
-            LabelDefinition labelDefLarge = new LabelDefinition(new SimpleLabelExpression("[NAME]"), textSymbolLargeCities)
-            {
-                WhereClause = "[TEST] = 'city'",
-                Placement = Esri.ArcGISRuntime.ArcGISServices.LabelingPlacement.LineCenterEnd,
-                TextLayout = LabelTextLayout.Horizontal,
-            };
-            labelDefLarge.OverrunStrategy = LabelOverrunStrategy.Allow;
-            labelDefLarge.RemoveDuplicatesStrategy = LabelRemoveDuplicatesStrategy.None;
-            labelDefLarge.RepeatStrategy = LabelRepeatStrategy.Repeat;
-            labelDefLarge.StackAlignment = LabelStackAlignment.Dynamic;
-            labelDefLarge.LineConnection = LabelLineConnection.None;
-            labelDefLarge.LabelOverlapStrategy = LabelOverlapStrategy.Allow;
-
-            pointsGraphicsOverlay.LabelDefinitions.Add(labelDefLarge);
+            
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.labelDef);
             pointsGraphicsOverlay.LabelsEnabled = true;
 
             //LoadMilitaryMessages();
-            Latitude = "10";
-            Longitude = "10";
+            Latitude = "0";
+            Longitude = "30";
 
             CreatePoint();
         }
@@ -252,8 +229,10 @@ namespace ArcGISTestRenderer
 
             // move line endpoint to the new anchor
             PolylineBuilder lineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
-            lineBuilder.AddPoint(contactAssociated.MainPoint);
+            
             lineBuilder.AddPoint(newAnchorPoint);
+            lineBuilder.AddPoint(contactAssociated.MainPoint);
+
             contactAssociated.LineGeometry = lineBuilder.ToGeometry();
             contactAssociated.LineGraphic.Geometry = contactAssociated.LineGeometry;
             contactAssociated.SetNewPixelDistance(UnitsPerPixel);

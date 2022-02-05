@@ -96,21 +96,21 @@ namespace ArcGISTestRenderer
 
             // Line Between Main Point and Anchor Point:
             PolylineBuilder lineBuilder = new PolylineBuilder(SpatialReferences.Wgs84);
-
-            lineBuilder.AddPoint(MainPoint);
+            
             lineBuilder.AddPoint(AnchorPoint);
+            lineBuilder.AddPoint(MainPoint);
+
             LineGeometry = lineBuilder.ToGeometry();
             LineGraphic = new Graphic(LineGeometry, _lineSymbol);
-            LineGraphic.Attributes["graphicType"] = "line";
-            LineGraphic.Attributes["NAME"] = "<BOL>Bom dia</BOL> Teste2";
-            LineGraphic.Attributes["TEST"] = "city";
+            LineGraphic.Attributes["graphicType"] = "labelLine";
+            LineGraphic.Attributes["label"] = "<BOL>Bom dia</BOL>\nTeste2\n250.053.123\n---";
             LineGraphic.ZIndex = MainGraphic.ZIndex - 5;
         }
 
         public void SetNewPixelDistance(double unitsPerPixel)
         {
-            MapPoint mapMainPoint = (MapPoint)GeometryEngine.Project(LineGeometry.Parts[0].StartPoint, SpatialReferences.WebMercator);
-            MapPoint mapAnchorPoint = (MapPoint)GeometryEngine.Project(LineGeometry.Parts[0].EndPoint, SpatialReferences.WebMercator);
+            MapPoint mapMainPoint = (MapPoint)GeometryEngine.Project(LineGeometry.Parts[0].EndPoint, SpatialReferences.WebMercator);
+            MapPoint mapAnchorPoint = (MapPoint)GeometryEngine.Project(LineGeometry.Parts[0].StartPoint, SpatialReferences.WebMercator);
 
             double dx = -(mapMainPoint.X - mapAnchorPoint.X);
             double dy = -(mapMainPoint.Y - mapAnchorPoint.Y);
@@ -122,8 +122,8 @@ namespace ArcGISTestRenderer
         {
             double intendedDistanceInUnits = unitsPerPixel * pixelDistance;
 
-            MapPoint mapMainPoint = (MapPoint)GeometryEngine.Project(LineGeometry.Parts[0].StartPoint, SpatialReferences.WebMercator);
-            MapPoint mapAnchorPoint = (MapPoint)GeometryEngine.Project(LineGeometry.Parts[0].EndPoint, SpatialReferences.WebMercator);
+            MapPoint mapMainPoint = (MapPoint)GeometryEngine.Project(LineGeometry.Parts[0].EndPoint, SpatialReferences.WebMercator);
+            MapPoint mapAnchorPoint = (MapPoint)GeometryEngine.Project(LineGeometry.Parts[0].StartPoint, SpatialReferences.WebMercator);
 
             double dx = -(mapMainPoint.X - mapAnchorPoint.X);
             double dy = -(mapMainPoint.Y - mapAnchorPoint.Y);
@@ -138,8 +138,10 @@ namespace ArcGISTestRenderer
             PolylineBuilder lineBuilder = new PolylineBuilder(SpatialReferences.WebMercator);
             MapPoint startPoint = new MapPoint(mapMainPoint.X, mapMainPoint.Y);
             MapPoint endPoint = new MapPoint(mapAnchorPoint.X, mapAnchorPoint.Y);
-            lineBuilder.AddPoint(startPoint);
+            
             lineBuilder.AddPoint(endPoint);
+            lineBuilder.AddPoint(startPoint);
+
             LineGeometry = (Polyline)GeometryEngine.Project(lineBuilder.ToGeometry(), SpatialReferences.Wgs84);
             LineGraphic.Geometry = LineGeometry;
         }
