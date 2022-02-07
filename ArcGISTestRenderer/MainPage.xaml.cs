@@ -59,6 +59,7 @@ namespace ArcGISTestRenderer
             MapViewTest.PointerMoved += MapViewTest_PointerMoved;
             MapViewTest.ViewpointChanged += MapViewTest_ViewpointChanged;
             MapViewTest.GeoViewDoubleTapped += MapViewTest_GeoViewDoubleTapped;
+            MapViewTest.InteractionOptions = new MapViewInteractionOptions();
         }
 
         private async void MapViewTest_GeoViewDoubleTapped(object sender, Esri.ArcGISRuntime.UI.Controls.GeoViewInputEventArgs e)
@@ -67,14 +68,12 @@ namespace ArcGISTestRenderer
             bool onlyReturnPopups = false;
             try
             {
-
                 IdentifyGraphicsOverlayResult identifyResults = await MapViewTest.IdentifyGraphicsOverlayAsync(
                     MapViewModel.pointsGraphicsOverlay,
                     e.Position,
                     tolerance,
                     onlyReturnPopups,
                     maximumResults: 100);
-
 
                 if (identifyResults.Graphics.Count > 0)
                 {
@@ -90,6 +89,7 @@ namespace ArcGISTestRenderer
                         string oldNumberString = Convert.ToString(number);
                         string newColor = colorAttribute.Replace(oldNumberString, newNumberString);
                         g.Attributes["labelColor"] = newColor;
+                        MapViewTest.InteractionOptions.IsZoomEnabled = true;
                     }
                 }
             }
@@ -122,12 +122,7 @@ namespace ArcGISTestRenderer
         private void MapViewTest_PointerReleased(object sender, PointerRoutedEventArgs e)
         {
             IsLabelBeingMoved = false;
-            MapViewInteractionOptions interactionOptions = new MapViewInteractionOptions()
-            {
-                IsPanEnabled = true,
-                IsZoomEnabled = true,
-            };
-            MapViewTest.InteractionOptions = interactionOptions;
+            MapViewTest.InteractionOptions.IsPanEnabled = true;
             editedLineGraphic = null;
         }
 
@@ -155,14 +150,9 @@ namespace ArcGISTestRenderer
                     {
                         editedLineGraphic = g;
                         IsLabelBeingMoved = true;
+
                         // block map panning
-                        MapViewInteractionOptions interactionOptions = new MapViewInteractionOptions()
-                        {
-                            IsPanEnabled = false,
-                            IsZoomEnabled = false,
-                        };
-                        MapViewTest.InteractionOptions = interactionOptions;
-                        
+                        MapViewTest.InteractionOptions.IsPanEnabled = false;
                     }
                 }
             }
@@ -174,9 +164,9 @@ namespace ArcGISTestRenderer
 
         private async void MapViewTest_GeoViewTapped(object sender, Esri.ArcGISRuntime.UI.Controls.GeoViewInputEventArgs e)
         {
-            /*
+            
             double tolerance = 15d;
-            int maximumResults = 1;
+            int maximumResults = 100;
             bool onlyReturnPopups = false;
 
             try
@@ -185,14 +175,15 @@ namespace ArcGISTestRenderer
                     MapViewModel.pointsGraphicsOverlay,
                     e.Position,
                     tolerance,
-                    onlyReturnPopups);
+                    onlyReturnPopups,
+                    maximumResults);
 
                 if (identifyResults.Graphics.Count > 0)
                 {
-                    Graphic g = identifyResults.Graphics.FirstOrDefault(graphic => graphic.Attributes["graphicType"].Equals("mainPoint"));
+                    Graphic g = identifyResults.Graphics.FirstOrDefault(graphic => graphic.Attributes["graphicType"].Equals("labelLine"));
                     if (g != null)
                     {
-                        g.IsSelected = !g.IsSelected;
+                        MapViewTest.InteractionOptions.IsZoomEnabled = !MapViewTest.InteractionOptions.IsZoomEnabled;
                     }
                 }
             }
@@ -200,7 +191,7 @@ namespace ArcGISTestRenderer
             {
                 await new MessageDialog(ex.ToString(), "Error").ShowAsync();
             }
-            */
+            
         }
 
         private void CreatePointButton_Click(object sender, RoutedEventArgs e)
