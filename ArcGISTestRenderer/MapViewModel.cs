@@ -125,7 +125,7 @@ namespace ArcGISTestRenderer
             militaryGraphicsOverlay = new GraphicsOverlay();
 
             string path = Directory.GetCurrentDirectory();
-            DictionarySymbolStyle mil2525DStyle = await DictionarySymbolStyle.CreateFromFileAsync(path + "\\Restaurant.stylx");
+            DictionarySymbolStyle mil2525DStyle = await DictionarySymbolStyle.CreateFromFileAsync(path + "\\mil2525D.stylx");
             militaryGraphicsOverlay.Renderer = new DictionaryRenderer(mil2525DStyle);
             pointsGraphicsOverlay.Renderer = new DictionaryRenderer(mil2525DStyle);
             

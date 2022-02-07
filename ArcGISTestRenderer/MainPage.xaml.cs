@@ -93,15 +93,18 @@ namespace ArcGISTestRenderer
         {
             PointerPoint pointerPoint = e.GetCurrentPoint(sender as UIElement);
             Windows.Foundation.Point point = pointerPoint.Position;
-            double tolerance = 10d;
+            double tolerance = 30d;
             bool onlyReturnPopups = false;
             try
             {
+                
                 IdentifyGraphicsOverlayResult identifyResults = await MapViewTest.IdentifyGraphicsOverlayAsync(
                     MapViewModel.pointsGraphicsOverlay,
                     point,
                     tolerance,
-                    onlyReturnPopups);
+                    onlyReturnPopups,
+                    maximumResults: 100);
+                
 
                 if (identifyResults.Graphics.Count > 0)
                 {
