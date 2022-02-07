@@ -104,6 +104,7 @@ namespace ArcGISTestRenderer
             LineGraphic = new Graphic(LineGeometry, _lineSymbol);
             LineGraphic.Attributes["graphicType"] = "labelLine";
             LineGraphic.Attributes["label"] = "<BOL>Bom dia</BOL>\nTeste2\n250.053.123\n---";
+            LineGraphic.Attributes["labelColor"] = "neutral1";
             LineGraphic.ZIndex = MainGraphic.ZIndex - 5;
         }
 

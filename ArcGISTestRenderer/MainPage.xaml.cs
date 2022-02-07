@@ -36,6 +36,8 @@ namespace ArcGISTestRenderer
 
         public double CurrentMapScale { get; set; }
 
+        //public static doubleTapTime
+
         public MainPage()
         {
             this.InitializeComponent();
@@ -56,6 +58,37 @@ namespace ArcGISTestRenderer
             MapViewTest.PointerPressed += MapViewTest_PointerPressed;
             MapViewTest.PointerMoved += MapViewTest_PointerMoved;
             MapViewTest.ViewpointChanged += MapViewTest_ViewpointChanged;
+            MapViewTest.GeoViewDoubleTapped += MapViewTest_GeoViewDoubleTapped;
+        }
+
+        private async void MapViewTest_GeoViewDoubleTapped(object sender, Esri.ArcGISRuntime.UI.Controls.GeoViewInputEventArgs e)
+        {
+            double tolerance = 30d;
+            bool onlyReturnPopups = false;
+            try
+            {
+
+                IdentifyGraphicsOverlayResult identifyResults = await MapViewTest.IdentifyGraphicsOverlayAsync(
+                    MapViewModel.pointsGraphicsOverlay,
+                    e.Position,
+                    tolerance,
+                    onlyReturnPopups,
+                    maximumResults: 100);
+
+
+                if (identifyResults.Graphics.Count > 0)
+                {
+                    Graphic g = identifyResults.Graphics.FirstOrDefault(graphic => graphic.Attributes["graphicType"].Equals("labelLine"));
+                    if (g != null)
+                    {
+                        
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                await new MessageDialog(ex.ToString(), "Error").ShowAsync();
+            }
         }
 
         private void MapViewTest_ViewpointChanged(object sender, EventArgs e)

@@ -129,7 +129,23 @@ namespace ArcGISTestRenderer
             militaryGraphicsOverlay.Renderer = new DictionaryRenderer(mil2525DStyle);
             pointsGraphicsOverlay.Renderer = new DictionaryRenderer(mil2525DStyle);
             
-            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.labelDef);
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.NeutralLabelDef1);
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.NeutralLabelDef2);
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.NeutralLabelDef3);
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.NeutralLabelDef4);
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.UnknownLabelDef1);
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.UnknownLabelDef2);
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.UnknownLabelDef3);
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.UnknownLabelDef4);
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.FriendLabelDef1);
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.FriendLabelDef2);
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.FriendLabelDef3);
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.FriendLabelDef4);
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.HostileLabelDef1);
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.HostileLabelDef2);
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.HostileLabelDef3);
+            pointsGraphicsOverlay.LabelDefinitions.Add(ContactLabelsDefinition.HostileLabelDef4);
+
             pointsGraphicsOverlay.LabelsEnabled = true;
 
             //LoadMilitaryMessages();
