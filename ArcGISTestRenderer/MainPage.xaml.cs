@@ -81,7 +81,15 @@ namespace ArcGISTestRenderer
                     Graphic g = identifyResults.Graphics.FirstOrDefault(graphic => graphic.Attributes["graphicType"].Equals("labelLine"));
                     if (g != null)
                     {
-                        
+                        string colorAttribute = (string)g.Attributes["labelColor"];
+                        int index = colorAttribute.Length - 1;
+                        int number = colorAttribute[index] - '0';
+                        int newNumber = number % 4 + 1;
+                        string newNumberString = Convert.ToString(newNumber);
+                        Console.WriteLine(newNumberString);
+                        string oldNumberString = Convert.ToString(number);
+                        string newColor = colorAttribute.Replace(oldNumberString, newNumberString);
+                        g.Attributes["labelColor"] = newColor;
                     }
                 }
             }
@@ -116,7 +124,8 @@ namespace ArcGISTestRenderer
             IsLabelBeingMoved = false;
             MapViewInteractionOptions interactionOptions = new MapViewInteractionOptions()
             {
-                IsPanEnabled = true
+                IsPanEnabled = true,
+                IsZoomEnabled = true,
             };
             MapViewTest.InteractionOptions = interactionOptions;
             editedLineGraphic = null;
@@ -149,7 +158,8 @@ namespace ArcGISTestRenderer
                         // block map panning
                         MapViewInteractionOptions interactionOptions = new MapViewInteractionOptions()
                         {
-                            IsPanEnabled = false
+                            IsPanEnabled = false,
+                            IsZoomEnabled = false,
                         };
                         MapViewTest.InteractionOptions = interactionOptions;
                         

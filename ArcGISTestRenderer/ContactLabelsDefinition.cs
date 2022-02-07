@@ -15,7 +15,7 @@ namespace ArcGISTestRenderer
         private const int TRANSPARENCY_FACTOR = 85;
 
         private static Color Unknown = Color.LightGoldenrodYellow;
-        private static Color Neutral = Color.LightGreen;
+        private static Color Neutral = Color.PaleGreen;
         private static Color Friend  = Color.LightCyan;
         private static Color Hostile = Color.LightSalmon;
 
