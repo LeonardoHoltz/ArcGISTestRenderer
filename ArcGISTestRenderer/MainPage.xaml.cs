@@ -34,6 +34,10 @@ namespace ArcGISTestRenderer
 
         public Graphic editedLineGraphic { get; set; } = null;
 
+        public Graphic lastGraphicClicked { get; set; } = null;
+
+        private long TimeSinceLastClick { get; set; } = 0;
+
         public double CurrentMapScale { get; set; }
 
         //public static doubleTapTime
@@ -63,7 +67,7 @@ namespace ArcGISTestRenderer
         }
 
         private async void MapViewTest_GeoViewDoubleTapped(object sender, Esri.ArcGISRuntime.UI.Controls.GeoViewInputEventArgs e)
-        {
+        { 
             double tolerance = 30d;
             bool onlyReturnPopups = false;
             try
@@ -89,7 +93,6 @@ namespace ArcGISTestRenderer
                         string oldNumberString = Convert.ToString(number);
                         string newColor = colorAttribute.Replace(oldNumberString, newNumberString);
                         g.Attributes["labelColor"] = newColor;
-                        MapViewTest.InteractionOptions.IsZoomEnabled = true;
                     }
                 }
             }
@@ -97,6 +100,9 @@ namespace ArcGISTestRenderer
             {
                 await new MessageDialog(ex.ToString(), "Error").ShowAsync();
             }
+
+            MapViewTest.InteractionOptions.IsZoomEnabled = true;
+            lastGraphicClicked = null;
         }
 
         private void MapViewTest_ViewpointChanged(object sender, EventArgs e)
@@ -126,8 +132,21 @@ namespace ArcGISTestRenderer
             editedLineGraphic = null;
         }
 
+        public long GetTimeOfClick()
+        {
+            DateTime now = DateTime.Now;
+            return (long)(now - new DateTime(1970, 1, 1)).TotalMilliseconds;
+    }
+
         private async void MapViewTest_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
+            long timeNow = GetTimeOfClick();
+            if (timeNow - TimeSinceLastClick < 1500 && lastGraphicClicked != null)
+            {
+                MapViewTest.InteractionOptions.IsZoomEnabled = false;
+            }
+            TimeSinceLastClick = timeNow;
+
             PointerPoint pointerPoint = e.GetCurrentPoint(sender as UIElement);
             Windows.Foundation.Point point = pointerPoint.Position;
             double tolerance = 30d;
@@ -164,8 +183,8 @@ namespace ArcGISTestRenderer
 
         private async void MapViewTest_GeoViewTapped(object sender, Esri.ArcGISRuntime.UI.Controls.GeoViewInputEventArgs e)
         {
-            
-            double tolerance = 15d;
+
+            double tolerance = 30d;
             int maximumResults = 100;
             bool onlyReturnPopups = false;
 
@@ -183,8 +202,16 @@ namespace ArcGISTestRenderer
                     Graphic g = identifyResults.Graphics.FirstOrDefault(graphic => graphic.Attributes["graphicType"].Equals("labelLine"));
                     if (g != null)
                     {
-                        MapViewTest.InteractionOptions.IsZoomEnabled = !MapViewTest.InteractionOptions.IsZoomEnabled;
+                        lastGraphicClicked = g;
                     }
+                    else
+                    {
+                        lastGraphicClicked = null;
+                    }
+                }
+                else
+                {
+                    lastGraphicClicked = null;
                 }
             }
             catch (Exception ex)
